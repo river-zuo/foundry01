@@ -1,4 +1,12 @@
-// SPDX-License-Identifier: Unlicense
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.13;
 
-contract Contract { }
+import "forge-std/Test.sol";
+
+// import {LibString} from "@solady-utils/LibString.sol";
+
+
+contract Contract {
+
+ }
+
