@@ -1,0 +1,16 @@
+{
+    "title": "学员 - dawn_clay",
+    "description": "OpenSpace_6th",
+    "image": "ipfs://bafkreig7xvzzmru6fwzrocforkt3a33qamfuf45emwgxsor72tbgmjepri",
+    "attributes": [
+        {
+            "trait_type": "学号",
+            "value": "1"
+        },
+        {
+            "trait_type": "昵称",
+            "value": "dawn_clay"
+        }
+    ],
+    "version": "1"
+}
