@@ -1,3 +1,28 @@
-cache/
+# Ignore build artifacts
 out/
+cache/
+
+# Ignore dependencies
+lib/
+
+# Ignore Forge broadcast files
+broadcast/
+
+# Ignore Forge test coverage files
+coverage/
+
+# Ignore Forge debug files
+debug.log
+
+# Ignore environment variables
 .env
+
+# Ignore macOS system files
+.DS_Store
+
+# Ignore Solidity temporary files
+*.swp
+*.swo
+
+# Ignore VSCode settings
+.vscode/
