@@ -1,3 +1,8 @@
+# 测试NFTMarket
+## 测试文件
+NFTMarketTest.t.sol
+## forge test 执行结果
+```
 forge test --match-contract NFTMarketTest  -vvv
 [⠊] Compiling...
 No files changed, compilation skipped
@@ -13,3 +18,4 @@ Logs:
 Suite result: ok. 4 passed; 0 failed; 0 skipped; finished in 575.25ms (576.28ms CPU time)
 
 Ran 1 test suite in 575.87ms (575.25ms CPU time): 4 tests passed, 0 failed, 0 skipped (4 total tests)
+```
