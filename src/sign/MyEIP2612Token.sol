@@ -29,3 +29,6 @@ contract MyEIP2612Token is ERC20Permit {
 
 // EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)
 
+// "➤ ABI：利用Cast工具逆向解码交易数据，https://decert.me/quests/0ba0f6e3-2b87-4a9b-b3aa-ae5f323459e1
+// ERC20 转账索引：https://decert.me/quests/ae220513-c0cb-4d9b-873a-caee1d4b358e
+// "
