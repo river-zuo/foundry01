@@ -3,7 +3,7 @@ out/
 cache/
 
 # Ignore dependencies
-lib/
+# lib/
 
 # Ignore Forge broadcast files
 broadcast/
