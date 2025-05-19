@@ -47,40 +47,42 @@ contract NFTMarket is BaseERC20CallBack {
         return pricesOfNFT[tokenId];
     }
 
+    error NFTNotExist();
+    error NotNFTOwner();
+    error InvalidPrice();
+    error NotApproved();
+
     // NFT的持有者上架NFT, 两种实现方式: 1.授权 2.转到该合约
-    function list(uint256 tokenId, uint256 amount) public  {
+    function list(uint256 tokenId, uint256 amount) public {
         address owner = _nft.ownerOf(tokenId);
-        require(owner != address(0), "nft not exist");
-        require(owner == msg.sender, "not the nft holder");
-        require(amount > 0, "price must more then zero");
-        // 查看NFTMarket是否有授权
-        address approveAddr = _nft.getApproved(tokenId);
-        require((approveAddr == address(this)), "NFTMarket has not get approved");
-        // 上架
+        if (owner == address(0)) revert NFTNotExist();
+        if (owner != msg.sender) revert NotNFTOwner();
+        if (amount == 0) revert InvalidPrice();
+        if (_nft.getApproved(tokenId) != address(this)) revert NotApproved();
         pricesOfNFT[tokenId] = amount;
-        
-        NftDetail memory detail = NftDetail({
-            id: tokenId,
-            price: amount,
-            owner: owner
-        });
-        onList.push(detail);
+        onList.push(NftDetail({id: tokenId, price: amount, owner: owner}));
         emit NftOnList(tokenId, msg.sender, amount);
     }
+
+    error NFTNotOnList();
+    error AlreadyOwner();
+    error TransferFailed();
 
     // 普通的购买 NFT 功能，用户转入所定价的 token 数量，获得对应的 NFT
     function buyNFT(uint256 tokenId) public {
         uint256 price = pricesOfNFT[tokenId];
-        require(price > 0, "nft not on list");
+        if (price == 0) revert NFTNotOnList();
+
         address old_holder = _nft.ownerOf(tokenId);
         address nft_new_holder = msg.sender;
-        require(old_holder != nft_new_holder, "you have owned the nft");
-        // 转账
-        bool success = _erc20.transferFrom(msg.sender, old_holder, price);
-        require(success, "thansfer success");
+        if (old_holder == nft_new_holder) revert AlreadyOwner();
+
+        if (!_erc20.transferFrom(msg.sender, old_holder, price)) {
+            revert TransferFailed();
+        }
+
         _nft.transferFrom(old_holder, nft_new_holder, tokenId);
         pricesOfNFT[tokenId] = 0;
-        // 移除列表
         _deleteNFTonList(tokenId);
         emit Transfer_NFT(old_holder, nft_new_holder, tokenId);
     }

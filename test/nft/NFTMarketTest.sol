@@ -14,17 +14,18 @@ contract NFTMarketTest is Test {
     
     NFTMarket nFTMarket;
 
-    event NftOnList(uint256 indexed tokenId, address indexed seller, uint256 price);
+    event NftOnList(uint256 tokenId, address seller, uint256 price);
 
     function setUp() public {}
 
+
+    // error NotNFTOwner();
     /**
      * 上架NFT：测试上架成功和失败情况，要求断言错误信息和上架事件。
         购买NFT：测试购买成功、自己购买自己的NFT、NFT被重复购买、支付Token过多或者过少情况，要求断言错误信息和购买事件。
         模糊测试：测试随机使用 0.01-10000 Token价格上架NFT，并随机使用任意Address购买NFT
         「可选」不可变测试：测试无论如何买卖，NFTMarket合约中都不可能有 Token 持仓
      */
-
     // 上架NFT：测试上架成功和失败情况，要求断言错误信息和上架事件。
     function testNFTMarket() public {
         BaseERC20 _erc20 = new BaseERC20();
@@ -33,9 +34,10 @@ contract NFTMarketTest is Test {
         _nft.mintMyNFT(address(this), 1, "a1");
         // 上架NFT：测试上架成功和失败情况，要求断言错误信息和上架事件。
         // 测试上架失败
-        vm.prank(makeAddr("no_exist_user"));
-        vm.expectRevert("not the nft holder");
+        vm.startPrank(makeAddr("no_exist_user"));
+        vm.expectRevert(NFTMarket.NotNFTOwner.selector);
         _market.list(1, 100);
+        vm.stopPrank();
         // 测试上架成功 断言上架事件
         _nft.approve(address(_market), 1);
         vm.expectEmit(true, true, false, true);
@@ -43,12 +45,12 @@ contract NFTMarketTest is Test {
         _market.list(1, 100);
     }
 
-    event Transfer_NFT(address indexed from, address indexed to, uint256 tokenId);
+    event Transfer_NFT(address  from, address  to, uint256 tokenId);
 
-    event Refund_Excess_Amount(address indexed from, address indexed to, uint256 refund);
+    event Refund_Excess_Amount(address  from, address  to, uint256 refund);
 
     // 购买NFT：测试购买成功、自己购买自己的NFT、NFT被重复购买、支付Token过多或者过少情况，要求断言错误信息和购买事件。
-    function testByNFT() public {
+    function testNFTMarketByNFT() public {
         BaseERC20 _erc20 = new BaseERC20();
         MyNFT _nft = new MyNFT("MyNFT", "MYT", "localhost:8080/");
         NFTMarket _market = new NFTMarket(address(_nft), address(_erc20));
@@ -70,14 +72,14 @@ contract NFTMarketTest is Test {
         address own_nft_11 = _nft.ownerOf(11);
         assertTrue(own_nft_11 == address(this), "own_nft_11 is not this");
         // 测试重复购买nft
-        vm.expectRevert("nft not on list");
+        vm.expectRevert(NFTMarket.NFTNotOnList.selector);
         _market.buyNFT(11);
         // 自己购买自己的NFT
         _nft.mintMyNFT(address(this), 1, "a1");
         _nft.mintMyNFT(address(this), 2, "a2");
         _nft.approve(address(_market), 1);
         _market.list(1, 200);
-        vm.expectRevert("you have owned the nft");
+        vm.expectRevert(NFTMarket.AlreadyOwner.selector);
         _market.buyNFT(1);
         // 支付Token过多或者过少情况
         _nft.mintMyNFT(user_AA, 12, "aa2");
