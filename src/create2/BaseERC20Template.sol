@@ -27,8 +27,10 @@ contract BaseERC20Template {
     uint public perMint; 
     uint public price;
     address public owner;
+    bool has_init = false;
 
     function _init(string memory _symbol, uint _totalSupply, uint _perMint, uint _price, address _owner) external {
+        if (has_init) revert("cant't init again");
         // set name,symbol,decimals,totalSupply
         name = _symbol;
         symbol = _symbol;
@@ -39,6 +41,8 @@ contract BaseERC20Template {
         perMint = _perMint;
         price = _price;
         owner = _owner;
+
+        has_init = true;
     }
     
     function getPerMint() public view returns (uint256) {
