@@ -1,8 +1,14 @@
 [profile.ci.fuzz]
 runs = 10_000
-solc_version = '0.8.27'
-
+# solc_version = '0.8.27'
 
 [rpc_endpoints]
 local = "http://127.0.0.1:8545"
 sepolia_remote = "https://sepolia.infura.io/v3/f8e482890ce74fa8ab5b5fb9fd31d2c7"
+
+# forge build会报错，需要加上下面的两个参数
+# forge build --via-ir --optimize
+
+[profile.default]
+via-ir = true
+optimizer = true
