@@ -1,3 +1,4 @@
+```
 ❯ forge test --match-contract NFTMarket --match-test testNFTMarket --gas-report
 [⠊] Compiling...
 [⠢] Compiling 1 files with Solc 0.8.28
@@ -65,3 +66,4 @@ Suite result: ok. 2 passed; 0 failed; 0 skipped; finished in 95.50ms (134.65ms C
 
 
 Ran 1 test suite in 96.02ms (95.50ms CPU time): 2 tests passed, 0 failed, 0 skipped (2 total tests)
+```

@@ -1,3 +1,4 @@
+```
 ❯ forge test --match-contract NFTMarket --match-test testNFTMarket --gas-report
 [⠊] Compiling...
 No files changed, compilation skipped
@@ -63,3 +64,4 @@ Suite result: ok. 2 passed; 0 failed; 0 skipped; finished in 99.16ms (142.06ms C
 
 
 Ran 1 test suite in 99.70ms (99.16ms CPU time): 2 tests passed, 0 failed, 0 skipped (2 total tests)
+```
