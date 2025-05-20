@@ -6,12 +6,13 @@ import "./IBank.sol";
 contract Bank is IBank {
     // 记录每个合约地址的存款金额
     mapping(address => uint256) public addr_balance;
-    // 存款最高的前三名
-    address[3] private top_3_balance_addr;
     // 管理员地址
     address private admin_addr;
-    // 未初始化时的地址
-    address constant UN_INIT_ADDR = address(0);
+    // 虚拟头结点
+    address constant GUARD = address(1); 
+    uint256 public size = 0;
+    // 单向链表
+    mapping(address => address) public next;
 
     constructor() {
         admin_addr = msg.sender;
@@ -21,12 +22,6 @@ contract Bank is IBank {
     receive() external payable virtual {
         recordBalanceOfAddr2();
     }
-
-    // 虚拟头结点
-    address constant GUARD = address(1); 
-    uint256 public size = 0;
-    // 单向链表
-    mapping(address => address) public next; 
 
     // top10 lindked===================================================================================================================
     function recordBalanceOfAddr2() internal {
@@ -138,6 +133,9 @@ contract Bank is IBank {
     }
 
     // top3 arr===================================================================================================================
+    
+    // 存款最高的前三名
+    address[3] private top_3_balance_addr;
 
     function recordBalanceOfAddr() internal {
         bool has_record = addr_balance[msg.sender] > 0;
@@ -182,7 +180,7 @@ contract Bank is IBank {
 
     function init_top3() private {
         for (uint i = 0; i< top_3_balance_addr.length;i++) {
-            if (top_3_balance_addr[i] == UN_INIT_ADDR) {
+            if (top_3_balance_addr[i] == address(0)) {
                 top_3_balance_addr[i] = msg.sender;
                 break ;
             }
