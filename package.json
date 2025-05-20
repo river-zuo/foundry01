@@ -1,0 +1,10 @@
+{
+  "dependencies": {
+    "keccak256": "^1.0.6",
+    "merkletreejs": "^0.5.2",
+    "viem": "^2.30.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.4"
+  }
+}

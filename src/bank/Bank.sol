@@ -11,7 +11,37 @@ contract Bank is IBank {
     // 管理员地址
     address private admin_addr;
     // 未初始化时的地址
-    address private constant UN_INIT_ADDR = 0x0000000000000000000000000000000000000000;
+    address constant UN_INIT_ADDR = address(0);
+
+    // mapping(address => address) public link_top_ten;
+
+    // address constant GUARD = address(1);
+
+    // uint256 size = 0;
+
+    // address lowest_balance_addr = address(0);
+
+    // function recordTop10WithLinked() private {
+    //     // 判断是否存在
+    //     bool exist = link_top_ten[msg.sender] != address(0);
+    //     // 不存在
+    //     if (!exist && size < 10) {
+    //         link_top_ten[msg.sender] = link_top_ten[GUARD];
+    //         link_top_ten[GUARD] = msg.sender;
+    //         size ++;
+    //         if (addr_balance[msg.sender] < addr_balance[lowest_balance_addr]) {
+    //             lowest_balance_addr = msg.sender;
+    //         }
+    //     } else if (!exist) {
+            
+    //     }
+    // }
+
+    // function fetchTop10() public returns  (address[] memory) {
+    //     address[] memory top10 = new address[](size);
+    //     address cur = link_top_ten[GUARD];
+        
+    // }
 
     constructor() {
         admin_addr = msg.sender;
@@ -96,14 +126,6 @@ contract Bank is IBank {
     }
 
     function lowest_balance_in_top3() private need_more_than_zero returns(uint256, address) {
-        // uint256 lowest = addr_balance[top_3_balance_addr[0]];
-        // address lowest_addr = top_3_balance_addr[0];
-        // for (uint i = 0; i < top_3_balance_addr.length; i++) {
-        //     if (lowest > addr_balance[top_3_balance_addr[i]]) {
-        //         lowest = addr_balance[top_3_balance_addr[i]];
-        //     }
-        // }
-        // return (lowest, lowest_addr);
         return (addr_balance[top_3_balance_addr[2]], top_3_balance_addr[2]);
     }
 
@@ -116,12 +138,5 @@ contract Bank is IBank {
         }
         sortTop3();
     }
-
-    // 向合约转账, remix中测试使用
-    // function transferTocontract() external payable {
-    //     address payable addr = payable(address(this));
-    //     addr.transfer(msg.value);
-    //     recordBalanceOfAddr();
-    // }
 
 }
