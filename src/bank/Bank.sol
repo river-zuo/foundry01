@@ -13,38 +13,90 @@ contract Bank is IBank {
     // 未初始化时的地址
     address constant UN_INIT_ADDR = address(0);
 
-    // mapping(address => address) public link_top_ten;
-
-    // address constant GUARD = address(1);
-
-    // uint256 size = 0;
-
-    // address lowest_balance_addr = address(0);
-
-    // function recordTop10WithLinked() private {
-    //     // 判断是否存在
-    //     bool exist = link_top_ten[msg.sender] != address(0);
-    //     // 不存在
-    //     if (!exist && size < 10) {
-    //         link_top_ten[msg.sender] = link_top_ten[GUARD];
-    //         link_top_ten[GUARD] = msg.sender;
-    //         size ++;
-    //         if (addr_balance[msg.sender] < addr_balance[lowest_balance_addr]) {
-    //             lowest_balance_addr = msg.sender;
-    //         }
-    //     } else if (!exist) {
-            
-    //     }
-    // }
-
-    // function fetchTop10() public returns  (address[] memory) {
-    //     address[] memory top10 = new address[](size);
-    //     address cur = link_top_ten[GUARD];
-        
-    // }
-
     constructor() {
         admin_addr = msg.sender;
+    }
+
+    // 接受转账
+    receive() external payable virtual {
+        recordBalanceOfAddr2();
+    }
+
+    // 虚拟头结点
+    address constant GUARD = address(1); 
+    uint256 public size = 0;
+    // 单向链表
+    mapping(address => address) public next; 
+
+    // top10 lindked===================================================================================================================
+    function recordBalanceOfAddr2() internal {
+        addr_balance[msg.sender] += msg.value;
+        insertTop10(msg.sender);
+    }
+    function insertTop10(address user) internal {
+        if (user == GUARD || user == address(0)) return;
+
+        // 如果已存在，先移除
+        if (next[user] != address(0)) {
+            remove(user);
+        }
+
+        address prev = findInsertPosition(user);
+        next[user] = next[prev];
+        next[prev] = user;
+        size++;
+
+        if (size > 10) {
+            removeTail();
+        }
+    }
+
+    function findInsertPosition(address user) internal view returns (address) {
+        address curr = GUARD;
+        while (next[curr] != address(0) && addr_balance[next[curr]] >= addr_balance[user]) {
+            curr = next[curr];
+        }
+        return curr;
+    }
+
+    function remove(address user) internal {
+        address prev = GUARD;
+        while (next[prev] != address(0)) {
+            if (next[prev] == user) {
+                next[prev] = next[user];
+                next[user] = address(0);
+                size--;
+                break;
+            }
+            prev = next[prev];
+        }
+    }
+
+    function removeTail() internal {
+        address prev = GUARD;
+        address curr = next[GUARD];
+
+        // 遍历到倒数第二个
+        while (next[curr] != address(0) && next[next[curr]] != address(0)) {
+            prev = curr;
+            curr = next[curr];
+        }
+
+        // 删除最后一个
+        if (next[curr] != address(0)) {
+            next[curr] = address(0);
+            size--;
+        }
+    }
+
+    function getTop10() public view returns (address[] memory) {
+        address[] memory top = new address[](size);
+        address curr = next[GUARD];
+        for (uint i = 0; i < size && curr != address(0); i++) {
+            top[i] = curr;
+            curr = next[curr];
+        }
+        return top;
     }
 
     modifier isOwner() {
@@ -65,10 +117,7 @@ contract Bank is IBank {
         admin_addr = new_addr;
     }
 
-    // 接受转账
-    receive() external payable virtual {
-        recordBalanceOfAddr();
-    }
+    
 
     // 管理员可以通过该方法提取所有的资金
     function withdraw() external payable override returns(int8) {
@@ -87,6 +136,8 @@ contract Bank is IBank {
         }
         return 0;
     }
+
+    // top3 arr===================================================================================================================
 
     function recordBalanceOfAddr() internal {
         bool has_record = addr_balance[msg.sender] > 0;
