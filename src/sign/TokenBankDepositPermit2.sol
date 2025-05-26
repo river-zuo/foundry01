@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "../erc20/BaseERC20.sol";
+import "src/erc20/BaseERC20.sol";
 import "permit2/src/Permit2.sol";
 import "permit2/src/interfaces/IPermit2.sol";
 import "permit2/src/interfaces/ISignatureTransfer.sol";
@@ -66,6 +66,20 @@ contract TokenBankDepositPermit2 {
         );
 
         _save(msg.sender, amount);
+    }
+
+    function spendWithPermit(
+        ISignatureTransfer.PermitTransferFrom calldata permit,
+        ISignatureTransfer.SignatureTransferDetails calldata transferDetails,
+        address owner,
+        bytes calldata signature
+    ) external {
+        _permit2.permitTransferFrom(
+            permit,
+            transferDetails,
+            owner,
+            signature
+        );
     }
 
 }
