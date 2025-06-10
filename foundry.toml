@@ -5,10 +5,14 @@ runs = 10_000
 [rpc_endpoints]
 local = "http://127.0.0.1:8545"
 sepolia_remote = "https://sepolia.infura.io/v3/f8e482890ce74fa8ab5b5fb9fd31d2c7"
-
+sepolia = "${SEPOLIA_RPC_URL}"
 # forge build会报错，需要加上下面的两个参数
 # forge build --via-ir --optimize
 
 [profile.default]
+src = "src"
+out = "out"
+libs = ["lib"]
 via-ir = true
 optimizer = true
+auto_detect_solc = true
