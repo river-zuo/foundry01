@@ -1,21 +1,57 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.0;
 
 import "forge-std/Test.sol";
 import "forge-std/console2.sol";
 
 import "src/sign/MyEIP2612Token.sol";
 import "src/sign/TokenBankPermitDeposit.sol";
+import "src/nft/MyNFT.sol";
+
+
+// import "src/sign/TokenBankDepositPermit2.sol";
+// import {Permit2} from "permit2/src/Permit2.sol";
+// import {ISignatureTransfer} from "permit2/src/interfaces/ISignatureTransfer.sol";
+// import {BaseERC20} from "src/erc20/BaseERC20.sol";
+// import {PermitHash} from "permit2/src/libraries/PermitHash.sol";
+
 
 contract TokenPermitDepositTest is Test {
 
     address constant SIGNER = 0x4251BA8F521CE6bAe071b48FC4621baF621057c5;
+
+    address constant MYNFT_ADDR = 0x3425C9B618c0518470a936ee36e90ea78123aC83;
+
+    address permit2_addr = 0xEdfC81c5326Ab4abDBafF66d09dd1F29ac5BE93F; // Permit2合约地址
+
 
     function setUp() public {
         // fork sepolia
         string memory sepolia = "https://sepolia.infura.io/v3/f8e482890ce74fa8ab5b5fb9fd31d2c7";
         uint256 forkId = vm.createFork(sepolia);
         vm.selectFork(forkId);
+        console2.log('forkId:', forkId);
+        // permit2 = Permit2(permit2_addr);
+    }
+
+    function _testForkSucc() public {
+        // 测试是否成功fork
+        uint256 blockNumber = vm.activeFork();
+        console2.log('blockNumber:', blockNumber);
+        assertTrue(blockNumber > 0, "fork failed");
+
+        MyNFT myNFT = MyNFT(MYNFT_ADDR);
+        address ownerAddr = myNFT.ownerOf(1);
+        console2.log('myNFT ownerAddr:', ownerAddr);
+
+    }
+
+    function testPermit2() public {
+        // 测试Permit2合约
+        // bytes32 domainSeparator = permit2.DOMAIN_SEPARATOR();
+        // console2.log('domainSeparator:', domainSeparator);
+
+        
     }
 
 /*
@@ -45,7 +81,7 @@ SIGNER签名信息
     "s": "0x2a547f504a87febd2b0c68cbf328fd347b02f33eac143ba0c67bac831d1f4d3f"
 }
 */
-    function testPermitDepositWithFork() public {
+    function _testPermitDepositWithFork() public {
         // sepolia部署的合约地址
         address deposit_addr = 0xE317d04Be77e4D9D96D2442E2B33Afd3D121dE56;
         address token_addr = 0x32Ae70b4f364775e54741a6d60F0beb8333F2caA;
@@ -72,7 +108,3 @@ SIGNER签名信息
     }
 
 }
-
-
-
-

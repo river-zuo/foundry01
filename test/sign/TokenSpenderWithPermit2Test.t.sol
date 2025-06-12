@@ -39,7 +39,7 @@ contract TokenSpenderWithPermit2Test is Test {
         vm.stopPrank();
     }
 
-    function testPermitTransfer() public {
+    function _testPermitTransfer() public {
         console.log(address(this));
         uint256 amount = 100 ether;
         uint256 nonce = 1;
@@ -106,7 +106,18 @@ contract TokenSpenderWithPermit2Test is Test {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(ownerPrivateKey, digest);
         bytes memory signature = abi.encodePacked(r, s, v);
         // bytes memory signature = abi.encodePacked(v, s, r);
+        // console.log("signature ", signature);
+        // console.log("digest ", digest);
+        // console.log("domainSeparator ", domainSeparator);
+        // console.log("structHash ", structHash);
+        
+        // console.log("v ", v);
+        // console.log("r ", uint256(r));
+        // console.log("s ", uint256(s));
         console.log("signature ", signature.length);
+        // console.log("signature ", bytes32(signature));
+        console.logBytes(signature);
+        // cc510ffd34f3d6e2927ded335b19f6c10436391c
 
         // 调用合约执行 transfer
         address cc = makeAddr("cc");
@@ -126,21 +137,92 @@ contract TokenSpenderWithPermit2Test is Test {
         assertEq(token.balanceOf(recipient), amount);
     }
 
-// PermitTransferFrom(TokenPermissions permitted,address spender,uint256 nonce,uint256 deadline)
-// PermitTransferFrom(TokenPermissions permitted,uint256 nonce,uint256 deadline)
-string constant TOKEN_PERMISSIONS_TYPE = "TokenPermissions(address token,uint256 amount)";
+     function testPermitTransfer2() public {
+        console.log(address(this));
+        uint256 amount = 100 ether;
+        uint256 nonce = 1;
+        uint256 deadline = block.timestamp + 24 hours;
+        console.log(deadline);
+
+        // 构造 PermitTransferFrom 和 TransferDetails
+        ISignatureTransfer.PermitTransferFrom memory permit = ISignatureTransfer.PermitTransferFrom({
+            permitted: ISignatureTransfer.TokenPermissions({
+                token: address(token),
+                amount: amount
+            }),
+            nonce: nonce,
+            deadline: deadline
+        });
+
+        ISignatureTransfer.SignatureTransferDetails memory transferDetails = ISignatureTransfer.SignatureTransferDetails({
+            to: recipient,
+            requestedAmount: amount
+        });
+
+        // 构造 EIP-712 签名
+
+        bytes32 structHash = hashPermitTransferFrom(permit);
+
+        bytes32 domainSeparator = permit2.DOMAIN_SEPARATOR();
+
+        bytes32 digest = keccak256(
+            abi.encodePacked("\x19\x01", domainSeparator, structHash)
+        );
+
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(ownerPrivateKey, digest);
+        bytes memory signature = abi.encodePacked(r, s, v);
+
+        console.log("signature ", signature.length);
+        console.logBytes(signature);
+
+        // 调用合约执行 transfer
+        address cc = makeAddr("cc");
+        // vm.deal(cc, 1 ether);
+        console2.log(cc);
+        console.log("cc ", cc);
+        console.log("spender ", address(spender));
+        console.log("permit2 ", address(permit2));
+        console.log("token ", address(token));
+        console.log("owner ", owner);
+        console.log("recipient ", recipient);
+        vm.prank(cc);
+        // vm.prank(address(cc));
+        spender.spendWithPermit(permit, transferDetails, owner, signature);
+
+        // 断言接收人拿到了 token
+        assertEq(token.balanceOf(recipient), amount);
+    }
+
+// string constant TOKEN_PERMISSIONS_TYPE = "TokenPermissions(address token,uint256 amount)";
+
+// string constant PERMIT_TRANSFER_FROM_TYPE = string(
+//     abi.encodePacked(
+//         _TRANSFER_FROM_TYPE,
+//         TOKEN_PERMISSIONS_TYPE
+//     )
+// );
+
+
+    function depositWithPermit2Signature(
+        address token,
+        uint256 amount,
+        uint256 nonce,
+        uint256 deadline
+    ) public view returns (bytes32) {
+        // 构造 PermitTransferFrom 结构体
+        ISignatureTransfer.PermitTransferFrom memory permit = ISignatureTransfer.PermitTransferFrom({
+            permitted: ISignatureTransfer.TokenPermissions({token: token, amount: amount}),
+            nonce: nonce,
+            deadline: deadline
+        });
+        hashPermitTransferFrom(permit);
+    }
+
 string constant _TRANSFER_FROM_TYPE = "PermitTransferFrom(TokenPermissions permitted,address spender,uint256 nonce,uint256 deadline)";
-string constant PERMIT_TRANSFER_FROM_TYPE = string(
-    abi.encodePacked(
-        _TRANSFER_FROM_TYPE,
-        TOKEN_PERMISSIONS_TYPE
-    )
-);
+
 bytes32 constant TOKEN_PERMISSIONS_TYPEHASH = keccak256(
     "TokenPermissions(address token,uint256 amount)"
 );
-
-// PermitTransferFrom(TokenPermissions permitted,address spender,uint256 nonce,uint256 deadline)
 
 bytes32 constant PERMIT_TRANSFER_FROM_TYPEHASH = keccak256(
     abi.encodePacked(
