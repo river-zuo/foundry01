@@ -5,6 +5,7 @@ import "src/erc20/BaseERC20.sol";
 import "permit2/src/Permit2.sol";
 import "permit2/src/interfaces/IPermit2.sol";
 import "permit2/src/interfaces/ISignatureTransfer.sol";
+import "permit2/src/libraries/PermitHash.sol";
 
 contract TokenBankDepositPermit2 {
 
@@ -42,6 +43,8 @@ contract TokenBankDepositPermit2 {
         uint256 amount,
         uint256 nonce,
         uint256 deadline,
+        address to,
+        address owner,
         bytes calldata signature
     ) public {
         // 构造 PermitTransferFrom 结构体
@@ -53,7 +56,8 @@ contract TokenBankDepositPermit2 {
 
         // 构造转账信息
         ISignatureTransfer.SignatureTransferDetails memory transferDetails = ISignatureTransfer.SignatureTransferDetails({
-            to: address(this),
+            // to: address(this),
+            to: to,
             requestedAmount: amount
         });
 
@@ -61,11 +65,12 @@ contract TokenBankDepositPermit2 {
         _permit2.permitTransferFrom(
             permit,
             transferDetails,
-            msg.sender,
+            // msg.sender,
+            owner,
             signature
         );
 
-        _save(msg.sender, amount);
+        _save(owner, amount);
     }
 
     function spendWithPermit(
@@ -74,13 +79,22 @@ contract TokenBankDepositPermit2 {
         address owner,
         bytes calldata signature
     ) external {
+        // PermitHash.hash(permit);
+        uint256 amount = transferDetails.requestedAmount;
         _permit2.permitTransferFrom(
             permit,
             transferDetails,
             owner,
             signature
         );
+        _save(owner, amount);
     }
+
+    // function calcPermitHash(
+    //     ISignatureTransfer.PermitTransferFrom memory permit
+    // ) public view returns (bytes32) {
+    //     return PermitHash.hash(permit);
+    // }
 
 }
 
