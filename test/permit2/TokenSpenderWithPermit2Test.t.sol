@@ -65,7 +65,7 @@ contract TokenSpenderWithPermit2Test is Test {
         });
 
 
-        bytes32 structHash = hashPermitTransferFrom(permit);
+        bytes32 structHash = spender.hashPermitTransferFrom(permit, address(spender));
 
         bytes32 domainSeparator = permit2.DOMAIN_SEPARATOR();
 
@@ -121,9 +121,8 @@ contract TokenSpenderWithPermit2Test is Test {
         });
 
         // 构造 EIP-712 签名
-
         
-        bytes32 structHash = hashPermitTransferFrom(permit);
+        bytes32 structHash = spender.hashPermitTransferFrom(permit, address(spender));
         // bytes32 structHash = spender.calcPermitHash(permit);
 
         bytes32 domainSeparator = permit2.DOMAIN_SEPARATOR();
@@ -149,17 +148,17 @@ contract TokenSpenderWithPermit2Test is Test {
         console.log("owner ", owner);
         console.log("recipient ", recipient);
         vm.prank(cc);
-        // spender.spendWithPermit(permit, transferDetails, owner, signature);
+        spender.spendWithPermit(permit, transferDetails, owner, signature);
         
-        spender.depositWithPermit2(
-            permit.permitted.token,
-            permit.permitted.amount,
-            permit.nonce,
-            permit.deadline,
-            transferDetails.to,
-            owner,
-            signature
-        );
+        // spender.depositWithPermit2(
+        //     permit.permitted.token,
+        //     permit.permitted.amount,
+        //     permit.nonce,
+        //     permit.deadline,
+        //     transferDetails.to,
+        //     owner,
+        //     signature
+        // );
 
         // 断言接收人拿到了 token
         assertEq(token.balanceOf(recipient), amount);
@@ -173,52 +172,53 @@ contract TokenSpenderWithPermit2Test is Test {
     }
 
 
-    function depositWithPermit2Signature(
-        address token,
-        uint256 amount,
-        uint256 nonce,
-        uint256 deadline
-    ) public view returns (bytes32) {
-        // 构造 PermitTransferFrom 结构体
-        ISignatureTransfer.PermitTransferFrom memory permit = ISignatureTransfer.PermitTransferFrom({
-            permitted: ISignatureTransfer.TokenPermissions({token: token, amount: amount}),
-            nonce: nonce,
-            deadline: deadline
-        });
-        hashPermitTransferFrom(permit);
-    }
+    // function depositWithPermit2Signature(
+    //     address token,
+    //     uint256 amount,
+    //     uint256 nonce,
+    //     uint256 deadline
+    // ) public view returns (bytes32) {
+    //     // 构造 PermitTransferFrom 结构体
+    //     ISignatureTransfer.PermitTransferFrom memory permit = ISignatureTransfer.PermitTransferFrom({
+    //         permitted: ISignatureTransfer.TokenPermissions({token: token, amount: amount}),
+    //         nonce: nonce,
+    //         deadline: deadline
+    //     });
+    //     hashPermitTransferFrom(permit);
+    // }
 
 
-    string constant _TRANSFER_FROM_TYPE = "PermitTransferFrom(TokenPermissions permitted,address spender,uint256 nonce,uint256 deadline)";
 
-    bytes32 constant TOKEN_PERMISSIONS_TYPEHASH = keccak256(
-        "TokenPermissions(address token,uint256 amount)"
-    );
+    // string constant _TRANSFER_FROM_TYPE = "PermitTransferFrom(TokenPermissions permitted,address spender,uint256 nonce,uint256 deadline)";
 
-    bytes32 constant PERMIT_TRANSFER_FROM_TYPEHASH = keccak256(
-        abi.encodePacked(
-            _TRANSFER_FROM_TYPE,
-            "TokenPermissions(address token,uint256 amount)"
-        )
-    );
+    // bytes32 constant TOKEN_PERMISSIONS_TYPEHASH = keccak256(
+    //     "TokenPermissions(address token,uint256 amount)"
+    // );
 
-    function hashTokenPermissions(ISignatureTransfer.TokenPermissions memory perm) internal pure returns (bytes32) {
-        return keccak256(abi.encode(
-            TOKEN_PERMISSIONS_TYPEHASH,
-            perm.token,
-            perm.amount
-        ));
-    }
+    // bytes32 constant PERMIT_TRANSFER_FROM_TYPEHASH = keccak256(
+    //     abi.encodePacked(
+    //         _TRANSFER_FROM_TYPE,
+    //         "TokenPermissions(address token,uint256 amount)"
+    //     )
+    // );
 
-    function hashPermitTransferFrom(ISignatureTransfer.PermitTransferFrom memory permit) internal view returns (bytes32) {
-        return keccak256(abi.encode(
-            PERMIT_TRANSFER_FROM_TYPEHASH,
-            hashTokenPermissions(permit.permitted),
-            address(spender),
-            permit.nonce,
-            permit.deadline
-        ));
-    }
+    // function hashTokenPermissions(ISignatureTransfer.TokenPermissions memory perm) internal pure returns (bytes32) {
+    //     return keccak256(abi.encode(
+    //         TOKEN_PERMISSIONS_TYPEHASH,
+    //         perm.token,
+    //         perm.amount
+    //     ));
+    // }
+
+    // function hashPermitTransferFrom(ISignatureTransfer.PermitTransferFrom memory permit, address spender) internal view returns (bytes32) {
+    //     return keccak256(abi.encode(
+    //         PERMIT_TRANSFER_FROM_TYPEHASH,
+    //         hashTokenPermissions(permit.permitted),
+    //         spender,
+    //         permit.nonce,
+    //         permit.deadline
+    //     ));
+    // }
 
 }
 

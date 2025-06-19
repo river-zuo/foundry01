@@ -90,14 +90,42 @@ contract TokenBankDepositPermit2 {
         _save(owner, amount);
     }
 
-    // function calcPermitHash(
-    //     ISignatureTransfer.PermitTransferFrom memory permit
-    // ) public view returns (bytes32) {
-    //     return PermitHash.hash(permit);
-    // }
+    // 计算permit2的签名信息=============================
+
+    string constant _TRANSFER_FROM_TYPE = "PermitTransferFrom(TokenPermissions permitted,address spender,uint256 nonce,uint256 deadline)";
+
+    bytes32 constant TOKEN_PERMISSIONS_TYPEHASH = keccak256(
+        "TokenPermissions(address token,uint256 amount)"
+    );
+
+    bytes32 constant PERMIT_TRANSFER_FROM_TYPEHASH = keccak256(
+        abi.encodePacked(
+            _TRANSFER_FROM_TYPE,
+            "TokenPermissions(address token,uint256 amount)"
+        )
+    );
+
+    function hashTokenPermissions(ISignatureTransfer.TokenPermissions memory perm) internal pure returns (bytes32) {
+        return keccak256(abi.encode(
+            TOKEN_PERMISSIONS_TYPEHASH,
+            perm.token,
+            perm.amount
+        ));
+    }
+
+    function hashPermitTransferFrom(ISignatureTransfer.PermitTransferFrom memory permit, address spender) public pure returns (bytes32) {
+        return keccak256(abi.encode(
+            PERMIT_TRANSFER_FROM_TYPEHASH,
+            hashTokenPermissions(permit.permitted),
+            spender,
+            permit.nonce,
+            permit.deadline
+        ));
+    }
 
 }
 
 /*
 0xa9059cbb0000000000000000000000005494befe3ce72a2ca0001fe0ed0c55b42f8c358f000000000000000000000000000000000000000000000000000000000836d54c
 */
+
