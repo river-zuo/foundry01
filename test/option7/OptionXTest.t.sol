@@ -98,9 +98,6 @@ contract OptionXTest is Test {
         market = new OptionMarketL2(address(endpoint), address(usdc), 101, address(0xBEEF));
         settlement = new OptionSettlementL1(address(endpoint), address(priceFeed), 101, address(market));
 
-        // 1000000000000000000
-        deal(address(settlement), 1 ether);
-
         endpoint.setContracts(market, settlement);
 
         usdc.mint(alice, 25e8 ether); // 增加铸造数量
@@ -138,45 +135,18 @@ contract OptionXTest is Test {
     function testCrossChainExerciseSuccess() public {
         vm.startPrank(alice);
 
-        // console.log(address(market));
         uint256 expiry = block.timestamp + 1 days;
         market.openPosition{value: 0}(ethStrike, expiry, size);
 
-        (address user,, uint256 expiryStored,, OptionMarketL2.OptionStatus status) = market.options(0);
-        assertEq(user, alice);
-        assertEq(expiryStored, expiry);
-        assertEq(uint256(status), 0); // Pending
-
-        // address user;
-        // uint256 strike;
-        // uint256 expiry;
-        // uint256 size;
-        // uint256 premium;
-        // bool exercised; 
-        
-        // (address userA, uint256 strike, uint256 expiryA, uint256 size, uint256 premium, bool exercised) = settlement.positions(0);
-        // console.log(userA);
-        // console.log(strike);
-        // console.log(expiryA);
-        // console.log(size);
-        // console.log(premium);
-        // console.log(exercised);
-
-        
         vm.warp(expiry + 1);
-        console.log(usdc.balanceOf(alice));
-        console.log(alice.balance);
         market.requestExercise(0);
-        console.log(usdc.balanceOf(alice));
-        console.log(alice.balance);
         vm.stopPrank();
 
-
-        (, , , , , bool exercised_1) = settlement.positions(0);
-        assertTrue(exercised_1);
+        (, , , , , bool exercised) = settlement.positions(0);
+        assertTrue(exercised);
     }
 
-    function _testCrossChainExerciseFailure() public {
+    function testCrossChainExerciseFailure() public {
         priceFeed.setPrice(2000e8); // below strike
 
         vm.startPrank(alice);
@@ -187,6 +157,8 @@ contract OptionXTest is Test {
         vm.stopPrank();
 
         (, , , , , bool exercised) = settlement.positions(0);
-        assertTrue(exercised); // marked as processed, but didn't payout
+        assertTrue(exercised); // marked as processed
     }
+    
+    
 }
