@@ -43,7 +43,7 @@ contract WriteL2 is Script {
         uint256 premium = strike * size / 1e18 / 100;
         usdc.approve(address(marketL2), premium);
 
-        marketL2.openPosition{value: 0.001 ether}(strike, expiry, size);
+        marketL2.openPosition{value: 0.0002 ether}(strike, expiry, size);
 
         
         vm.stopBroadcast();

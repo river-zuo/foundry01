@@ -61,7 +61,7 @@ contract OptionMarketL2 is ILayerZeroReceiver, ERC721, Ownable {
 
         endpoint.send{value: msg.value}(
             l1ChainId,
-            abi.encodePacked(settlementL1),
+            abi.encode(settlementL1),
             payload,
             payable(msg.sender),
             address(0),
@@ -88,10 +88,10 @@ contract OptionMarketL2 is ILayerZeroReceiver, ERC721, Ownable {
         bytes memory payload = abi.encode(tokenId, msg.sender, usdcAmount);
         (uint nativeFee,) = endpoint.estimateFees(l1ChainId, settlementL1, payload, false, "");
         require(msg.value >= nativeFee, "Insufficient native gas fee");
-
+        
         endpoint.send{value: nativeFee}(
             l1ChainId,
-            abi.encodePacked(settlementL1),
+            abi.encode(settlementL1),
             payload,
             payable(msg.sender),
             address(0),
