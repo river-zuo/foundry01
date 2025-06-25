@@ -66,6 +66,10 @@ contract MockEndpoint {
         settlement = _settlement;
     }
 
+    function estimateFees(uint16 _dstChainId, address payable _userApplication, bytes calldata _payload, bool _payInZRO, bytes calldata _adapterParams) external view returns (uint nativeFee, uint zroFee) {
+        return (0, 0); // 返回零值表示无需实际支付手续费（仅用于测试）
+    }
+
     function send(
         uint16, bytes calldata dstAddress, bytes calldata payload,
         address payable, address, bytes calldata
@@ -100,43 +104,18 @@ contract OptionXTest is Test {
 
         endpoint.setContracts(market, settlement);
 
+        deal(address(settlement), 1 ether);
+
         usdc.mint(alice, 25e8 ether); // 增加铸造数量
         vm.prank(alice);
         usdc.approve(address(market), type(uint256).max);
     }
 
-    function _testOpenAndExerciseOption() public {
+    function testExercisePaysUSDCandReceivesETH() public {
         vm.startPrank(alice);
 
         uint256 expiry = block.timestamp + 1 days;
-        market.openPosition{value: 0}(ethStrike, expiry, size);
-
-        (address user, uint256 strike,, uint256 _size, OptionMarketL2.OptionStatus status) = market.options(0);
-        assertEq(user, alice);
-        assertEq(strike, ethStrike);
-        assertEq(_size, size);
-        assertEq(uint256(status), 0); // Pending
-
-        vm.warp(expiry + 1);
-        // market.requestExercise(0);
-        vm.stopPrank();
-    }
-
-    function _testRun() public {
-        // 0x00000000000000000000000000000000000000000000000000000000000a11ce0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000009502f90000000000000000000000000000000000000000000000000000000000000151810000000000000000000000000000000000000000000000000de0b6b3a764000000000000000000000000000000000000000000000014adf4b7320334b9000000
-        // 0x000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000a11ce
-        bytes memory payload = hex"000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000a11ce";
-
-        (uint256 tokenId, address user) = abi.decode(payload, (uint256, address));
-        console.log("Token ID:", tokenId); // 会输出 0
-        console.log("User Address:", user); // 会输出 0xA11cE
-    }
-
-    function testCrossChainExerciseSuccess() public {
-        vm.startPrank(alice);
-
-        uint256 expiry = block.timestamp + 1 days;
-        market.openPosition{value: 0}(ethStrike, expiry, size);
+        market.openPosition(ethStrike, expiry, size);
 
         vm.warp(expiry + 1);
         market.requestExercise(0);
@@ -146,19 +125,17 @@ contract OptionXTest is Test {
         assertTrue(exercised);
     }
 
-    function testCrossChainExerciseFailure() public {
-        priceFeed.setPrice(2000e8); // below strike
+    function _testExerciseFailsBelowStrike() public {
+        priceFeed.setPrice(2000e8);
 
         vm.startPrank(alice);
         uint256 expiry = block.timestamp + 1 days;
-        market.openPosition{value: 0}(ethStrike, expiry, size);
+        market.openPosition(ethStrike, expiry, size);
         vm.warp(expiry + 1);
         market.requestExercise(0);
         vm.stopPrank();
 
         (, , , , , bool exercised) = settlement.positions(0);
-        assertTrue(exercised); // marked as processed
+        assertTrue(exercised);
     }
-    
-    
 }

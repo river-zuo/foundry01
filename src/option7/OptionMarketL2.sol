@@ -5,95 +5,110 @@ import { ILayerZeroEndpoint } from "@layerzerolabs/contracts/lzApp/interfaces/IL
 import { ILayerZeroReceiver } from "@layerzerolabs/contracts/lzApp/interfaces/ILayerZeroReceiver.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { ERC721 } from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 
-contract OptionMarketL2 is ILayerZeroReceiver, Ownable {
+contract OptionMarketL2 is ILayerZeroReceiver, ERC721, Ownable {
     ILayerZeroEndpoint public endpoint;
+    address public settlementL1;
+    uint16 public l1ChainId;
     IERC20 public usdc;
 
-    uint16 public dstChainId; // destination chain id (L1 Sepolia)
-    address public settlementL1; // address of OptionSettlementL1 on Sepolia
-
-    uint256 public nextTokenId;
-
-    enum OptionStatus { Pending, Exercised, Expired }
+    enum OptionStatus { Pending, Exercised }
 
     struct Option {
-        address user;
-        uint256 strike;
-        uint256 expiry;
-        uint256 size;
+        uint256 strike;   // USDC strike price, 6 decimals
+        uint256 expiry;   // timestamp
+        uint256 size;     // ETH amount in wei
         OptionStatus status;
     }
 
-    mapping(uint256 => Option) public options;
+    Option[] public options;
 
-    event PositionOpened(address indexed user, uint256 tokenId, uint256 strike, uint256 expiry, uint256 size);
-    event ExerciseRequested(address indexed user, uint256 tokenId);
-    event ExerciseResultReceived(uint256 tokenId, bool success);
+    event PositionOpened(uint256 indexed tokenId, address indexed user);
+    event ExerciseRequested(uint256 indexed tokenId, uint256 usdcAmount);
 
-    constructor(address _endpoint, address _usdc, uint16 _dstChainId, address _settlementL1) Ownable(msg.sender) {
+    constructor(address _endpoint, address _usdc, uint16 _l1ChainId, address _settlementL1)
+        ERC721("Option7 Position", "OPT7") Ownable (msg.sender)
+    {
         endpoint = ILayerZeroEndpoint(_endpoint);
         usdc = IERC20(_usdc);
-        dstChainId = _dstChainId;
+        l1ChainId = _l1ChainId;
         settlementL1 = _settlementL1;
     }
 
+    function updateSettlementL1(address _settlementL1) external onlyOwner {
+        settlementL1 = _settlementL1;
+    }
+
+    function readBlockTimestamp() public view returns (uint256) {
+        return block.timestamp;
+    }
+
     function openPosition(uint256 strike, uint256 expiry, uint256 size) external payable {
-        require(strike > 0 && expiry > block.timestamp && size > 0, "Invalid params");
+        uint256 premium = strike * size / 1e18 / 100;
+        require(usdc.transferFrom(msg.sender, address(this), premium), "Premium transfer failed");
+        
+        // 构造 payload
+        bytes memory payload = abi.encode(msg.sender, options.length, strike, expiry, size, premium);
+        // (uint nativeFee,) = endpoint.estimateFees(l1ChainId, settlementL1, payload, false, "");
+        // require(msg.value >= nativeFee, "Insufficient native gas fee");
 
-        uint256 tokenId = nextTokenId++;
-        options[tokenId] = Option(msg.sender, strike, expiry, size, OptionStatus.Pending);
+        // 记录仓位 & mint NFT
+        options.push(Option(strike, expiry, size, OptionStatus.Pending));
+        uint256 tokenId = options.length - 1;
+        _mint(msg.sender, tokenId);
 
-        // transfer premium fee from user (e.g., 1% of strike * size) – simplified
-        uint256 premium = (strike * size) / 100;
-        usdc.transferFrom(msg.sender, address(this), premium);
-
-        // prepare payload
-        bytes memory payload = abi.encode(msg.sender, tokenId, strike, expiry, size, premium);
-
-        // send LayerZero message to L1 settlement
         endpoint.send{value: msg.value}(
-            dstChainId,
+            l1ChainId,
             abi.encodePacked(settlementL1),
             payload,
             payable(msg.sender),
-            address(0x0),
-            bytes("")
+            address(0),
+            ""
         );
 
-        emit PositionOpened(msg.sender, tokenId, strike, expiry, size);
+        // refund 多余费用
+        // if (msg.value > nativeFee) {
+        //     payable(msg.sender).transfer(msg.value - nativeFee);
+        // }
+
+        emit PositionOpened(tokenId, msg.sender);
     }
 
     function requestExercise(uint256 tokenId) external payable {
+        require(ownerOf(tokenId) == msg.sender, "Not owner");
         Option storage opt = options[tokenId];
-        require(msg.sender == opt.user, "Not owner");
-        require(opt.status == OptionStatus.Pending, "Already settled");
-        require(block.timestamp >= opt.expiry, "Not expired");
+        require(block.timestamp >= opt.expiry, "Option not expired");
+        require(opt.status == OptionStatus.Pending, "Already exercised");
 
-        bytes memory payload = abi.encode(tokenId, opt.user);
+        uint256 usdcAmount = opt.strike * opt.size / 1e18;
+        require(usdc.transferFrom(msg.sender, address(this), usdcAmount), "USDC transfer failed");
 
-        endpoint.send{value: msg.value}(
-            dstChainId,
+        bytes memory payload = abi.encode(tokenId, msg.sender, usdcAmount);
+        (uint nativeFee,) = endpoint.estimateFees(l1ChainId, settlementL1, payload, false, "");
+        require(msg.value >= nativeFee, "Insufficient native gas fee");
+
+        endpoint.send{value: nativeFee}(
+            l1ChainId,
             abi.encodePacked(settlementL1),
             payload,
             payable(msg.sender),
-            address(0x0),
-            bytes("")
+            address(0),
+            ""
         );
 
-        emit ExerciseRequested(msg.sender, tokenId);
+        if (msg.value > nativeFee) {
+            payable(msg.sender).transfer(msg.value - nativeFee);
+        }
+
+        opt.status = OptionStatus.Exercised;
+        emit ExerciseRequested(tokenId, usdcAmount);
     }
 
-    function lzReceive(
-        uint16, bytes calldata, uint64, bytes calldata payload
-    ) external override {
-        require(msg.sender == address(endpoint), "Only endpoint can call");
-
+    function lzReceive(uint16, bytes calldata, uint64, bytes calldata payload) external {
         (uint256 tokenId, bool success) = abi.decode(payload, (uint256, bool));
-        options[tokenId].status = success ? OptionStatus.Exercised : OptionStatus.Expired;
-
-        emit ExerciseResultReceived(tokenId, success);
+        // 可拓展处理结果
     }
 
     receive() external payable {}
