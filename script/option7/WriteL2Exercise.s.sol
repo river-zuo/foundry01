@@ -6,7 +6,7 @@ import "src/option7/OptionSettlementL1.sol";
 import "src/option7/OptionMarketL2.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-contract WriteL2 is Script {
+contract WriteL2Exercise is Script {
     function run() external {
         // Sepolia 私钥和 RPCs
         uint256 sepoliaPrivKey = vm.envUint("ACCOUNT_FOR_DEV_PRIVATE_KEY");
@@ -37,13 +37,17 @@ contract WriteL2 is Script {
         uint256 size = 0.00001 ether;
 
         // 读取arbitrum usdc banlance
-        uint256 devKeyBalance = usdc.balanceOf(vm.envAddress("DEV_PUB_KEY"));
-        console.log("devKeyBalance", devKeyBalance);
+        // uint256 devKeyBalance = usdc.balanceOf(vm.envAddress("DEV_PUB_KEY"));
+        // console.log("devKeyBalance", devKeyBalance);
         // 授权转账
-        uint256 premium = strike * size / 1e18 / 100;
-        usdc.approve(address(marketL2), premium);
+        // uint256 premium = strike * size / 1e18 / 100;
+        // usdc.approve(address(marketL2), premium);
 
-        marketL2.openPosition{value: 0.005 ether}(strike, expiry, size);
+        // marketL2.openPosition{value: 0.005 ether}(strike, expiry, size);
+        uint256 usdcAmount = strike * size / 1e18;
+        usdc.approve(address(marketL2), usdcAmount);
+        marketL2.requestExercise{value: 0.005 ether}(1);
+        
         
         vm.stopBroadcast();
         console.log("OptionSettlementL1: marketL2 address updated to", address(marketL2));

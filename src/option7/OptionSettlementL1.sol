@@ -97,7 +97,7 @@ contract OptionSettlementL1 is ILayerZeroReceiver, Ownable {
             value: address(this).balance / 100
         }(
             l2ChainId,
-            abi.encode(marketL2),
+            abi.encodePacked(marketL2, address(this)),
             resultPayload,
             payable(address(this)),
             address(0x0),

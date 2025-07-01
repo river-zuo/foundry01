@@ -39,6 +39,14 @@ contract ReadStateL1L2 is Script {
         console.log("OptionSettlementL1: marketL2 address", marketL2Addr);
         console.log("OptionSettlementL1: l2ChainId", l2ChainId);
 
+        (address user, uint256 strike, uint256 expiry, uint256 size, uint256 premium, bool exercised) = settlementL1.positions(1);
+        console.log("user: ", user);
+        console.log("strike: ", strike);
+        console.log("expiry: ", expiry);
+        console.log("size: ", size);
+        console.log("premium: ", premium);
+        console.log("exercised: ", exercised);
+
         // 读取arbitrum usdc banlance
         // IERC20 usdc = IERC20(vm.envAddress("usdc_arbitrum_sepolia_address"));
         // uint256 devKeyBalance = usdc.balanceOf(vm.envAddress("DEV_PUB_KEY"));

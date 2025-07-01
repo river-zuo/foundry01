@@ -50,8 +50,14 @@ contract OptionMarketL2 is ILayerZeroReceiver, ERC721, Ownable {
         require(usdc.transferFrom(msg.sender, address(this), premium), "Premium transfer failed");
         
         // 构造 payload
-        bytes memory payload = abi.encode(msg.sender, options.length, strike, expiry, size, premium);
-        // (uint nativeFee,) = endpoint.estimateFees(l1ChainId, settlementL1, payload, false, "");
+        bytes memory payload = abi.encode(msg.sender, settlementL1, strike, expiry, size, premium);
+        (uint nativeFee,) = endpoint.estimateFees(
+            l1ChainId, 
+            settlementL1,
+            payload, 
+            false, 
+            ""
+         );
         // require(msg.value >= nativeFee, "Insufficient native gas fee");
 
         // 记录仓位 & mint NFT
@@ -61,7 +67,7 @@ contract OptionMarketL2 is ILayerZeroReceiver, ERC721, Ownable {
 
         endpoint.send{value: msg.value}(
             l1ChainId,
-            abi.encode(settlementL1),
+            abi.encodePacked(settlementL1, address(this)),
             payload,
             payable(msg.sender),
             address(0),
@@ -86,21 +92,21 @@ contract OptionMarketL2 is ILayerZeroReceiver, ERC721, Ownable {
         require(usdc.transferFrom(msg.sender, address(this), usdcAmount), "USDC transfer failed");
 
         bytes memory payload = abi.encode(tokenId, msg.sender, usdcAmount);
-        (uint nativeFee,) = endpoint.estimateFees(l1ChainId, settlementL1, payload, false, "");
-        require(msg.value >= nativeFee, "Insufficient native gas fee");
+        // (uint nativeFee,) = endpoint.estimateFees(l1ChainId, settlementL1, payload, false, "");
+        // require(msg.value >= nativeFee, "Insufficient native gas fee");
         
-        endpoint.send{value: nativeFee}(
+        endpoint.send{value: msg.value}(
             l1ChainId,
-            abi.encode(settlementL1),
+            abi.encodePacked(settlementL1, address(this)),
             payload,
             payable(msg.sender),
             address(0),
             ""
         );
 
-        if (msg.value > nativeFee) {
-            payable(msg.sender).transfer(msg.value - nativeFee);
-        }
+        // if (msg.value > nativeFee) {
+        //     payable(msg.sender).transfer(msg.value - nativeFee);
+        // }
 
         opt.status = OptionStatus.Exercised;
         emit ExerciseRequested(tokenId, usdcAmount);
