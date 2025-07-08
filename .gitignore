@@ -27,3 +27,6 @@ debug.log
 # Ignore VSCode settings
 .vscode/
 node_modules
+
+# ignore IntelliJ IDEA files
+.idea/
